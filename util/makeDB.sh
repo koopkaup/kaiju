@@ -110,7 +110,7 @@ command -v awk >/dev/null 2>/dev/null || { echo Error: awk not found; exit 1; }
 command -v wget >/dev/null 2>/dev/null || { echo Error: wget not found; exit 1; }
 command -v xargs >/dev/null 2>/dev/null || { echo Error: xargs not found; exit 1; }
 command -v tar >/dev/null 2>/dev/null || { echo Error: tar not found; exit 1; }
-command -v gunzip >/dev/null 2>/dev/null || { echo Error: gunzip not found; exit 1; }
+command -v pigz >/dev/null 2>/dev/null || { echo Error: pigz not found; exit 1; }
 command -v perl >/dev/null 2>/dev/null || { echo Error: perl not found; exit 1; }
 command -v python >/dev/null 2>/dev/null || { echo Error: python not found; exit 1; }
 
@@ -188,11 +188,11 @@ then
 	[ -r nr.gz ] || { echo Missing file nr.gz; exit 1; }
 	[ -r prot.accession2taxid.gz ] || { echo Missing file prot.accession2taxid.gz; exit 1; }
 	echo Unpacking prot.accession2taxid.gz
-	gunzip -c prot.accession2taxid.gz > prot.accession2taxid
+	pigz -p $threadsBWT -c prot.accession2taxid.gz > prot.accession2taxid
 	echo Converting NR file to Kaiju database
 	if [ $db_euk -eq 1 ]
 	then
-		gunzip -c nr.gz | convertNR -t nodes.dmp -g prot.accession2taxid -a -o kaiju_db_nr_euk.faa -l $SCRIPTDIR/taxonlist.tsv
+		pigz -p $threadsBWT -c nr.gz | convertNR -t nodes.dmp -g prot.accession2taxid -a -o kaiju_db_nr_euk.faa -l $SCRIPTDIR/taxonlist.tsv
 		echo Creating BWT from Kaiju database
 		mkbwt -e $exponentSA_NR -n $threadsBWT -a ACDEFGHIKLMNPQRSTVWY -o kaiju_db_nr_euk kaiju_db_nr_euk.faa
 		echo Creating FM-index
@@ -202,7 +202,7 @@ then
 		echo The remaining files can be deleted.
 		echo
 	else
-		gunzip -c nr.gz | convertNR -t nodes.dmp -g prot.accession2taxid -a -o kaiju_db_nr.faa
+		pigz -p $threadsBWT -c nr.gz | convertNR -t nodes.dmp -g prot.accession2taxid -a -o kaiju_db_nr.faa
 		echo Creating BWT from Kaiju database
 		mkbwt -e $exponentSA_NR -n $threadsBWT -a ACDEFGHIKLMNPQRSTVWY -o kaiju_db_nr kaiju_db_nr.faa
 		echo Creating FM-index
@@ -253,7 +253,7 @@ else
 		if [ $db_viruses -eq 1 ]; then if [ ! -r genomes/viral.1.genomic.gbff.gz ]; then echo Missing file viral.1.genomic.gbff.gz; exit 1; fi; fi
 		if [ $db_viruses -eq 1 ]; then if [ ! -r genomes/viral.2.genomic.gbff.gz ]; then echo Missing file viral.2.genomic.gbff.gz; exit 1; fi; fi
 		echo Extracting protein sequences from downloaded files...
-		gunzip -c genomes/representatives.proteins.fasta.gz | perl -lne 'if(/>(\d+)\.(\S+)/){print ">",$2,"_",$1}else{y/BZ/DE/;s/[^ARNDCQEGHILKMFPSTWYV]//gi;print if length}' > genomes/representatives.proteins.fasta.gz.faa
+		pigz -p $threadsBWT -c genomes/representatives.proteins.fasta.gz | perl -lne 'if(/>(\d+)\.(\S+)/){print ">",$2,"_",$1}else{y/BZ/DE/;s/[^ARNDCQEGHILKMFPSTWYV]//gi;print if length}' > genomes/representatives.proteins.fasta.gz.faa
 		find ./genomes -name "viral.*.gbff.gz" | xargs -n 1 -P $parallelConversions -IXX gbk2faa.pl XX XX.faa
 	elif [ $db_viruses -eq 1 ]
 	then
